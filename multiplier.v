@@ -47,6 +47,8 @@ module booth_mul_rad4 (temp_manA, temp_manB, temp_product); //radix4_booth_multi
 	end
 endmodule
 
+
+
 module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 	input [15:0] hp_inA;
 	input [15:0] hp_inB;
@@ -94,11 +96,11 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 		man_B = hp_inB[9:0];
 
 
-        // booth_mul_rad4 A0 (
-		// 	.temp_manA (booth_manA),
-		// 	.temp_manB (booth_manB),
-		// 	.temp_product (booth_product)
-		// 	);
+        /* booth_mul_rad4 A0 (
+	 	.temp_manA (booth_manA),
+	 	.temp_manB (booth_manB),
+	 	.temp_product (booth_product)
+	 	);*/
 		
 		// Checking for exceptions (NaN, Infinity, etc)
 		
@@ -154,29 +156,165 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
                     man_product = booth_product[21:12];
                     exp_product = exp_product + 5'd1;
                 end
-        endcase
-        exp_product_flow = {1'b0, exp_product} + 5'd15;
-        if (exp_product_flow < 6'd15) begin
-            // $display("exp_product_flow = %b", exp_product_flow);
-            $display("Exception - Underflow\n");
-            Exceptions = 2'b10;
-            hp_product = 16'bx;
-        end
-        else if (exp_product_flow > 6'd46) begin
-            //  $display("exp_product_flow = %b", exp_product_flow);
-            $display("Exception - Overflow\n");
-            Exceptions = 2'b01;
-            hp_product = 16'bx;
-        end
-        else begin
-             $display("Valid Output\n");
-             hp_product = {sign_product, exp_product[4:0], man_product};
-             Exceptions = 2'b00;
-        end
+			endcase
+		
+			// Checking for Underflow and Overflow
+			exp_product_flow = {1'b0, exp_product} + 5'd15;
+			if (exp_product_flow < 6'd16) begin
+				// $display("exp_product_flow = %b", exp_product_flow);
+				$display("Exception - Underflow\n");
+				Exceptions = 2'b10;
+				hp_product = 16'bx;
+			end
+			else if (exp_product_flow > 6'd45) begin
+				//  $display("exp_product_flow = %b", exp_product_flow);
+				$display("Exception - Overflow\n");
+				Exceptions = 2'b01;
+				hp_product = 16'bx;
+			end
+			else begin
+				$display("Valid Output\n");
+				hp_product = {sign_product, exp_product[4:0], man_product};
+				Exceptions = 2'b00;
+			end
 			// Calling the Booth Multiplier module
-			// Checking for underflow and Overflow
 			//if (exp_A+exp_B>46 || exp_A+exp_B<15)
 		end
 	end
 endmodule
 
+
+
+module multiplier_test;
+	reg [15:0] hp_inA, hp_inB;
+	wire [15:0] hp_product;
+	wire [1:0] Exceptions;
+	
+	reg [4:0] count;
+	hp_multiplier B0 (hp_inA, hp_inB, hp_product, Exceptions);
+	initial begin
+
+		count = 5'd0;
+		//1. A=2.5, B=4.9
+		#0;
+		hp_inA = 16'b0100000100000000;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+
+		//2. A=0, B=4.9
+		#1000;
+		hp_inA = 16'b0000000000000000;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+
+		//3. A=+inf, B=4.9
+		#1000;
+		hp_inA = 16'b0111110000000000;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+		
+		//4. A=-inf, B=0
+		#1000;
+		hp_inA = 16'b1111110000000000;
+		hp_inB = 16'b0000000000000000;
+		count = count+5'd1;
+
+		//5. A=NaN, B=4.9
+		#1000;
+		hp_inA = 16'b0111110100000100;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+
+		//6. A=-NaN, B=0
+		#1000;
+		hp_inA = 16'b1111110100000100;
+		hp_inB = 16'b0000000000000000;
+		count = count+5'd1;
+
+		//7. A=+Denormalized B=4.9
+		#1000;
+		hp_inA = 16'b0000000100011110;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+
+		//8. A=-Denormalized B=0
+		#1000;
+		hp_inA = 16'b1000000100011110;
+		hp_inB = 16'b0000000000000000;
+		count = count+5'd1;
+	
+		//9. Underflow: A = 0.0000763, B = 0.0001526
+		#1000;
+		hp_inA = 16'b0000010100000000;
+		hp_inB = 16'b0000100100000110;
+		count = count+5'd1;
+
+   
+		//10. Case where shifting of the mantissa is needed: A = 3.0, B = 3.0
+		#1000;
+		hp_inA = 16'b0100001000000000;
+		hp_inB = 16'b0100001000000000;
+		count = count+5'd1;
+
+		//11. A = +2.5, B = +4
+		#15000;
+		hp_inA = 16'b0100000100000000;
+		hp_inB = 16'b0100010000000000;
+		count = count+5'd1;
+	
+		//12. A = +2.5, B = -4
+		#15000;
+		hp_inA = 16'b0100000100000000;
+		hp_inB = 16'b1100010000000000;
+		count = count+5'd1;
+
+		//13. A = -2.5, B = +4
+		#15000;
+		hp_inA = 16'b1100000100000000;
+		hp_inB = 16'b0100010000000000;
+		count = count+5'd1;
+
+		//14. A = -2.5, B = -4
+		#15000;
+		hp_inA = 16'b1100000100000000;
+		hp_inB = 16'b1100010000000000;
+		count = count+5'd1;
+
+		//15. A = 1.5*2^-8, B = 1.5*2^-7
+		#15000;
+		hp_inA = 16'b0001111000000000;
+		hp_inB = 16'b0010001000000000;
+		count = count+5'd1;
+
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+	
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+	
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+		// #1000;
+		// hp_inA = 16'b0100000100000000;
+		// hp_inB = 16'b0100010011100110;
+	end
+
+	initial begin
+		$monitor("Test case = %d\nA = %d\nB = %d\nOutput = %b\nDecimal output = %d\n", count, hp_inA, hp_inB, hp_product, hp_product);
+	end
+endmodule
