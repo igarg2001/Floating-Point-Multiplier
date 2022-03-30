@@ -49,13 +49,12 @@ endmodule
 
 
 
-module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions, DONE);
+module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 	input [15:0] hp_inA;
 	input [15:0] hp_inB;
 	output reg [15:0] hp_product;
 	output reg [1:0] Exceptions;
 
-    reg DONE = 0;
     
 	
 	reg [9:0] man_A, man_B;
@@ -87,9 +86,6 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions, DONE);
 	assign man_B = hp_inB[9:0];*/
 	
 	always @(*) begin
-		if(!DONE) begin
-            
-        end
 		// Breaking up the half-precision number
 
 		sign_A = hp_inA[15];
