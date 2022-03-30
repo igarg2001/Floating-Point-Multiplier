@@ -1,6 +1,6 @@
 # Floating-Point-Half-Precision-Multiplier (16-bit)
 
-## The multiplier usies Radix-4 Booth's Multiplication ALgorithm
+## The multiplier usies Radix-4 Booth's Multiplication Algorithm
 
 ## Made as part of the Course Assignment for CSF342: Computer Architecture
 
