@@ -1,3 +1,11 @@
+/* 
+* FLOATING POINT HALF-PRECISION MULTIPLIER (16-bit)
+* USES RADIX-4 BOOTH MULTIPLICATION ALGORITHM
+* GROUP MEMBERS:
+** JAGRIT LODHA : 2019A3PS0165P
+** ISHAN GARG : 2019A7PS0034P
+ */
+
 module booth_mul_rad4 (temp_manA, temp_manB, temp_product); //radix4_booth_multiplier
 	input [12:0] temp_manA;
 	input [12:0] temp_manB;
