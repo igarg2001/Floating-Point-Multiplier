@@ -4,7 +4,7 @@
 * GROUP MEMBERS:
 ** JAGRIT LODHA : 2019A3PS0165P
 ** ISHAN GARG : 2019A7PS0034P
- */
+*/
 
 module booth_mul_rad4 (temp_manA, temp_manB, temp_product); //radix4_booth_multiplier
 	input [12:0] temp_manA;
@@ -62,6 +62,14 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 	input [15:0] hp_inB;
 	output reg [15:0] hp_product;
 	output reg [1:0] Exceptions;
+
+	/* 
+	* EXCEPTIONS CAN TAKE THE FOLLOWING VALUES:
+	* 1. 00: VALID OUTPUT
+	* 2. 01. OVERFLOW
+	* 3. 10. UNDERFLOW
+	* 4. 11. INVALID INPUT
+	*/
 
     
 	
@@ -146,10 +154,10 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 			exp_product = exp_A + exp_B - 5'd15;
 			sign_product = sign_A ^ sign_B;
 			
-			#100;
+			// #100;
             booth_manA = {3'b001, man_A};
 			booth_manB = {2'b01, man_B, 1'b0};
-            #100;
+            // #100;
 
             normCheck = booth_product[22:21];
             case (normCheck)
@@ -169,19 +177,15 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 			// Checking for Underflow and Overflow
 			exp_product_flow = {1'b0, exp_product} + 5'd15;
 			if (exp_product_flow < 6'd16) begin
-				// $display("exp_product_flow = %b", exp_product_flow);
-				$display("Exception - Underflow\n");
 				Exceptions = 2'b10;
 				hp_product = 16'bx;
 			end
 			else if (exp_product_flow > 6'd45) begin
 				//  $display("exp_product_flow = %b", exp_product_flow);
-				$display("Exception - Overflow\n");
 				Exceptions = 2'b01;
 				hp_product = 16'bx;
 			end
 			else begin
-				$display("Valid Output\n");
 				hp_product = {sign_product, exp_product[4:0], man_product};
 				Exceptions = 2'b00;
 			end
@@ -200,8 +204,9 @@ module multiplier_test;
 	
 	reg [4:0] count;
 	hp_multiplier B0 (hp_inA, hp_inB, hp_product, Exceptions);
-	initial begin
 
+	initial begin
+		
 		count = 5'd0;
          //1. A = 5, B = 6
         #0;
@@ -210,125 +215,126 @@ module multiplier_test;
 		count = count + 5'd1;
 
 		//2. A=0, B=4.9
-		#1000;
+		#10;
 		hp_inA = 16'b0000000000000000;
 		hp_inB = 16'b0100010011100110;
 		count = count+5'd1;
 
 		//3. A=+inf, B=4.9
-		#1000;
+		#10;
 		hp_inA = 16'b0111110000000000;
 		hp_inB = 16'b0100010011100110;
 		count = count+5'd1;
 		
 		//4. A=-inf, B=0
-		#1000;
+		#10;
 		hp_inA = 16'b1111110000000000;
 		hp_inB = 16'b0000000000000000;
 		count = count+5'd1;
 
 		//5. A=NaN, B=4.9
-		#1000;
+		#10;
 		hp_inA = 16'b0111110100000100;
 		hp_inB = 16'b0100010011100110;
 		count = count+5'd1;
 
 		//6. A=-NaN, B=0
-		#1000;
+		#10;
 		hp_inA = 16'b1111110100000100;
 		hp_inB = 16'b0000000000000000;
 		count = count+5'd1;
 
 		//7. A=+Denormalized B=4.9
-		#1000;
+		#10;
 		hp_inA = 16'b0000000100011110;
 		hp_inB = 16'b0100010011100110;
 		count = count+5'd1;
 
 		//8. A=-Denormalized B=0
-		#1000;
+		#10;
 		hp_inA = 16'b1000000100011110;
 		hp_inB = 16'b0000000000000000;
 		count = count+5'd1;
 	
 		//9. Underflow: A = 0.0000763, B = 0.0001526
-		#1000;
+		#10;
 		hp_inA = 16'b0000010100000000;
 		hp_inB = 16'b0000100100000110;
 		count = count+5'd1;
 
    
 		//10. Case where shifting of the mantissa is needed: A = 3.0, B = 3.0
-		#1000;
+		#10;
 		hp_inA = 16'b0100001000000000;
 		hp_inB = 16'b0100001000000000;
 		count = count+5'd1;
 
 		//11. A = +2.5, B = +4
-		#15000;
+		#10;
 		hp_inA = 16'b0100000100000000;
 		hp_inB = 16'b0100010000000000;
 		count = count+5'd1;
 	
 		//12. A = +2.5, B = -4
-		#15000;
+		#10;
 		hp_inA = 16'b0100000100000000;
 		hp_inB = 16'b1100010000000000;
 		count = count+5'd1;
 
 		//13. A = -2.5, B = +4
-		#15000;
+		#10;
 		hp_inA = 16'b1100000100000000;
 		hp_inB = 16'b0100010000000000;
 		count = count+5'd1;
 
 		//14. A = -2.5, B = -4
-		#15000;
+		#10;
 		hp_inA = 16'b1100000100000000;
 		hp_inB = 16'b1100010000000000;
 		count = count+5'd1;
 
 		//15. A = 1.5*2^-8, B = 1.5*2^-7
-		#15000;
+		#10;
 		hp_inA = 16'b0001111000000000;
 		hp_inB = 16'b0010001000000000;
 		count = count+5'd1;
 
 		//16. A=2.5, B=4.9
-		#15000;
+		#10;
 		hp_inA = 16'b0100000100000000;
 		hp_inB = 16'b0100010011100110;
 		count = count+5'd1;
 
         //17. Overflow: A = 270, B = 1082
-		#15000;
+		#10;
 		hp_inA = 16'b0101110000111000;
 		hp_inB = 16'b0110010000111010;
         count = count+5'd1;
+
         //18. Overflow due to bit shift: A = 192, B = 384
-        #15000;
+        #10;
 		hp_inA = 16'b0101101000000000;
 		hp_inB = 16'b0101111000000000;
         count = count+5'd1;
 
         //19. Max range A = 65504, B = -65504
-		// #15000;
+		#10;
 		hp_inA = 16'b0111101111111111;
 		hp_inB = 16'b1111101111111111;
         count = count+5'd1;
 
         //20. A = 65504, B = 1
-		#15000;
+		#10;
 		hp_inA = 16'b0111101111111111;
 		hp_inB = 16'b0011110000000000;
         count = count+5'd1;
-		// #1000;
+		// #10;
 		// hp_inA = 16'b0100000100000000;
 		// hp_inB = 16'b0100010011100110;
-		// #1000;
+		// #10;
 		// hp_inA = 16'b0100000100000000;
 		// hp_inB = 16'b0100010011100110;
-		// #1000;
+		// #10;
 		// hp_inA = 16'b0100000100000000;
 		// hp_inB = 16'b0100010011100110;
 	end
