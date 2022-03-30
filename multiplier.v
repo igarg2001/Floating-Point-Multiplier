@@ -49,12 +49,13 @@ endmodule
 
 
 
-module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
+module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions, DONE);
 	input [15:0] hp_inA;
 	input [15:0] hp_inB;
 	output reg [15:0] hp_product;
 	output reg [1:0] Exceptions;
 
+    reg DONE = 0;
     
 	
 	reg [9:0] man_A, man_B;
@@ -86,8 +87,11 @@ module hp_multiplier (hp_inA, hp_inB, hp_product, Exceptions);
 	assign man_B = hp_inB[9:0];*/
 	
 	always @(*) begin
-		
+		if(!DONE) begin
+            
+        end
 		// Breaking up the half-precision number
+
 		sign_A = hp_inA[15];
 		exp_A = hp_inA[14:10];
 		man_A = hp_inA[9:0];
@@ -195,11 +199,11 @@ module multiplier_test;
 	initial begin
 
 		count = 5'd0;
-		//1. A=2.5, B=4.9
-		#0;
-		hp_inA = 16'b0100000100000000;
-		hp_inB = 16'b0100010011100110;
-		count = count+5'd1;
+         //1. A = 5, B = 6
+        #0;
+		hp_inA = 16'b0100010100000000;
+		hp_inB = 16'b0100011000000000;
+		count = count + 5'd1;
 
 		//2. A=0, B=4.9
 		#1000;
@@ -286,23 +290,34 @@ module multiplier_test;
 		hp_inB = 16'b0010001000000000;
 		count = count+5'd1;
 
-		// #1000;
-		// hp_inA = 16'b0100000100000000;
-		// hp_inB = 16'b0100010011100110;
-	
-		// #1000;
-		// hp_inA = 16'b0100000100000000;
-		// hp_inB = 16'b0100010011100110;
-	
-		// #1000;
-		// hp_inA = 16'b0100000100000000;
-		// hp_inB = 16'b0100010011100110;
-		// #1000;
-		// hp_inA = 16'b0100000100000000;
-		// hp_inB = 16'b0100010011100110;
-		// #1000;
-		// hp_inA = 16'b0100000100000000;
-		// hp_inB = 16'b0100010011100110;
+		//16. A=2.5, B=4.9
+		#15000;
+		hp_inA = 16'b0100000100000000;
+		hp_inB = 16'b0100010011100110;
+		count = count+5'd1;
+
+        //17. Overflow: A = 270, B = 1082
+		#15000;
+		hp_inA = 16'b0101110000111000;
+		hp_inB = 16'b0110010000111010;
+        count = count+5'd1;
+        //18. Overflow due to bit shift: A = 192, B = 384
+        #15000;
+		hp_inA = 16'b0101101000000000;
+		hp_inB = 16'b0101111000000000;
+        count = count+5'd1;
+
+        //19. Max range A = 65504, B = -65504
+		// #15000;
+		hp_inA = 16'b0111101111111111;
+		hp_inB = 16'b1111101111111111;
+        count = count+5'd1;
+
+        //20. A = 65504, B = 1
+		#15000;
+		hp_inA = 16'b0111101111111111;
+		hp_inB = 16'b0011110000000000;
+        count = count+5'd1;
 		// #1000;
 		// hp_inA = 16'b0100000100000000;
 		// hp_inB = 16'b0100010011100110;
@@ -315,6 +330,6 @@ module multiplier_test;
 	end
 
 	initial begin
-		$monitor("Test case = %d\nA = %d\nB = %d\nOutput = %b\nDecimal output = %d\n", count, hp_inA, hp_inB, hp_product, hp_product);
+		$monitor("Test case = %d\nA = %b\nB = %b\nOutput = %b\nExceptions=%b\n", count, hp_inA, hp_inB, hp_product, Exceptions);
 	end
 endmodule
